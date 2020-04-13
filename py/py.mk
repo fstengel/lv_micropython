@@ -21,6 +21,7 @@ QSTR_GLOBAL_REQUIREMENTS += $(HEADER_BUILD)/mpversion.h
 # some code is performance bottleneck and compiled with other optimization options
 CSUPEROPT = -O3
 
+#<<<<<<< HEAD
 #LittlevGL
 LVGL_BINDING_DIR = $(TOP)/lib/lv_bindings
 LVGL_DIR = $(LVGL_BINDING_DIR)/lvgl
@@ -65,6 +66,14 @@ $(LODEPNG_C): $(LODEPNG_DIR)/lodepng.cpp $(LODEPNG_DIR)/*
 
 SRC_MOD += $(subst $(TOP)/,,$(LODEPNG_C) $(MP_LODEPNG_C) $(LODEPNG_MODULE))
 
+#=======
+# Enable building 32-bit code on 64-bit host.
+ifeq ($(MICROPY_FORCE_32BIT),1)
+CC += -m32
+CXX += -m32
+LD += -m32
+endif
+#>>>>>>> micropython/master
 
 # External modules written in C.
 ifneq ($(USER_C_MODULES),)
@@ -132,6 +141,7 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	runtime_utils.o \
 	scheduler.o \
 	nativeglue.o \
+	pairheap.o \
 	ringbuf.o \
 	stackctrl.o \
 	argcheck.o \
@@ -205,6 +215,7 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	)
 
 PY_EXTMOD_O_BASENAME = \
+	extmod/moduasyncio.o \
 	extmod/moductypes.o \
 	extmod/modujson.o \
 	extmod/modure.o \
@@ -290,6 +301,10 @@ $(HEADER_BUILD)/qstrdefs.generated.h: $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_C
 	$(ECHO) "GEN $@"
 	$(Q)$(CAT) $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_COLLECTED) | $(SED) 's/^Q(.*)/"&"/' | $(CPP) $(CFLAGS) - | $(SED) 's/^\"\(Q(.*)\)\"/\1/' > $(HEADER_BUILD)/qstrdefs.preprocessed.h
 	$(Q)$(PYTHON) $(PY_SRC)/makeqstrdata.py $(HEADER_BUILD)/qstrdefs.preprocessed.h > $@
+
+$(HEADER_BUILD)/compressed.data.h: $(HEADER_BUILD)/compressed.collected
+	$(ECHO) "GEN $@"
+	$(Q)$(PYTHON) $(PY_SRC)/makecompresseddata.py $< > $@
 
 # build a list of registered modules for py/objmodule.c.
 $(HEADER_BUILD)/moduledefs.h: $(SRC_QSTR) $(QSTR_GLOBAL_DEPENDENCIES) | $(HEADER_BUILD)/mpversion.h
